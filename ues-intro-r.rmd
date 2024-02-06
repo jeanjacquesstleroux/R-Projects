@@ -1,0 +1,471 @@
+---
+title: "Welcome to the UES R Intro Workshop!"
+output: html_notebook
+---
+
+This is going to be a friendly intro workshop on some **R basics**. This notebook is designed for an hour-long workshop for beginners and **excludes many important areas of the R language and computer science in general**. This also is not reflective of best practices. We encourage a separate course on best practices.
+
+To get the most out of this workshop, we encourage a basic understanding of statistics and mathematics. Some computer programming experience is also helpful.
+
+You can execute code chunks by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
+
+# Data Type Fundamentals in R
+
+## Basic Data Types
+
+Let's first do some arithmetic on two numbers!
+
+```{r}
+
+# Basic arithmetic operations
+a <- 6
+b <- 3
+sum_ab <- a + b
+difference_ab <- a - b
+product_ab <- a * b
+quotient_ab <- a / b
+
+# Print results
+print(sum_ab)
+print(difference_ab)
+print(product_ab)
+print(quotient_ab)
+```
+
+As we can see, using the `<-` symbol assigns a value to a variable. We can also do this with other things besides numbers, like text, Boolean (`TRUE`/`FALSE`) values, and characters (single text values).
+
+```{r}
+
+my_string <- "UES is an awesome Economics club!" # This is a string
+my_bool <- TRUE # This is a Boolean (T/F)
+my_char <- 'c' # This is a character
+my_double <- 1.6667
+
+print(my_string)
+print(my_bool)
+print(my_char)
+print(my_double)
+```
+
+We can also inquire about which data type a variable is, as well as change its type.
+
+```{r}
+
+# Asks are "what type of variable do I have?"
+typeof(my_bool)
+```
+
+```{r}
+
+# Changing some data types
+as.numeric(my_bool)
+as.roman(a)
+as.integer(my_double)
+```
+
+## Vectors
+
+In mathematics, a vector $v$ in $\mathbb{R}^n$ is an ordered set of $n$ real numbers. It can be represented as
+
+$$
+\mathbf{v} = [v_1 \ v_2 \ \ldots \ v_n]\ , 
+\mathbf{v^T} = \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_m \end{bmatrix} \
+$$
+
+where $v_i$ represents the $i$th most element in the vector. $\mathbf{v^T}$ denotes the transpose of the vector $\mathbf{v}$ , which can be thought of as the "rotation" of the vector. If you've never seen this before, no worries -- think of $\mathbf{v^T}$ as an equivalent "vertical" version of the vector.
+
+In computer science, a vector is a data structure that represents an **ordered set of values**, often used to store and manipulate collections of numeric data. In the context of programming languages like R, a vector is a one-dimensional array that can store elements of the **same data type.**
+
+In R, we don't have to transpose vectors much, but one may transpose matrices and other datatypes often.
+
+### Integer Vector
+
+```{r}
+
+# Example of a vector with integers
+int_vec <- c(1, 2, 3, 4, 5)
+print(int_vec)
+```
+
+### Boolean Vector
+
+```{r}
+
+# Example of a vector with Booleans
+bool_vec <- c(TRUE, FALSE, TRUE, TRUE, FALSE)
+print(bool_vec)
+```
+
+### String Vector
+
+```{r}
+
+# Example of a vector with strings
+string_vec <- c("Jean-Jacques", "Jason", "Avery", "Gabbie", "Deason", "Navya", "Abbey", "Luka")
+print(string_vec)
+```
+
+### Accessing a single element
+
+```{r}
+
+# We can also print just one element of a vector
+x <- v[3] # v[3]: Third element of v
+print(paste("Third element of v:", x))
+```
+
+### Changing a single element
+
+```{r}
+
+# Changing a single element in the vector
+string_vec[1] <- "JJ"
+print(string_vec)
+```
+
+There are other operations you can do on vectors, like **arithmetic** (as long as they are matching data types), **deletion**, **reversing**, and more.
+
+## Matrices
+
+We can similarly create matrices in R. In mathematics, a matrix in $\mathbf{R}^{m \times n}$ is a two-dimensional array of values in $\mathbf{R}$ arranged in $m$ rows and $n$ columns. We often express an entry in a matrix as $a_{mn}$, or an entry $a$ at the $m$-th row and the $n$-th column. A matrix can be also thought of as a collection of vectors. It is represented as:
+
+$$A =\begin{bmatrix} 
+    a_{11} & a_{12} & \ldots & a_{1n} \\
+    a_{21} & a_{22} & \ldots & a_{2n} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    a_{m1} & a_{m2} & \ldots & a_{mn}
+\end{bmatrix} $$
+
+In R, a matrix is exactly that -- a two-dimensional **array** of elements of the **same data type**. When taking upper-level econometrics, you'll use matrices for nearly anything involving multivariate data.
+
+We can easily make matrices in R using the `matrix()` function and can do many of the same operations as we've done on vectors.
+
+### Creating a Matrix
+
+```{r}
+
+# Creating a 3x3 matrix with random values
+set.seed(123)  # Create the same random numbers each time we access the matrix
+matrix_A <- matrix(rnorm(9), nrow = 3, ncol = 3)
+
+print(matrix_A)
+```
+
+### Accessing a single element
+
+```{r}
+
+# Accessing a single element of a matrix
+element_22 <- matrix_A[2, 2]
+
+print("Element at (2, 2):")
+print(element_22)
+
+# Accessing multiple elements of a matrix
+subset_matrix <- matrix_A[1:2, 2:3]
+
+print("Subset of Matrix (1:2, 2:3):")
+print(subset_matrix)
+```
+
+### Applying functions to a matrix
+
+```{r}
+
+# Applying a function to each element of a matrix
+abs_matrix_A = abs(matrix_A)
+log_matrix_A <- log(abs_matrix_A)
+
+print("Original Matrix:")
+print(matrix_A)
+
+print("Matrix with Absolute Value & Logarithm Applied:")
+print(log_matrix_A)
+```
+
+There's much more you can do with matrices, like **arithmetic**, **transposition**, and many operations from Linear Algebra using the `matrix` library.
+
+## Conditional Logic
+
+Conditional logic, or Boolean algebra, is a way if a computer checks the **Boolean** value of something based on **conditions**.
+
+An `if` statement usually "kicks" off a logical check. `else` statements check an alternative case. `&` (and), `|` (or) check the logic of multiple statements. `!` (not) evaluates the opposite logical value.
+
+### If-Else
+
+```{r}
+x <- 7
+
+# If-else statement
+if (x > 5) {
+  print("x is greater than 5")
+} else {
+  print("x is less than or equal to 5")
+}
+```
+
+### Using Else-if
+
+```{r}
+
+if (x < 5) {
+  print("x is less than 5")
+} else if (x == 5) {
+  print("x equals 5")
+} else {
+  print("x is greater than 5")
+}
+```
+
+### Using `&` (and)
+
+```{r}
+
+# Example 1: Using 'and' logic
+x <- 7
+y <- 12
+
+if (x > 5 & y < 15) {
+  print("Both conditions are true.")
+} else {
+  print("At least one condition is false.")
+}
+```
+
+### Using `|` (or)
+
+```{r}
+# Example 2: Using 'or' logic
+a <- 25
+b <- 8
+
+if (a > 20 | b > 10) {
+  print("At least one condition is true.")
+} else {
+  print("Both conditions are false.")
+}
+```
+
+### Combining `&` (and), `|` (or)
+
+```{r}
+# Example 3: Combining 'and' and 'or' logic
+c <- 15
+d <- 30
+
+if ((c > 10 & d < 25) | (c == 15 & d > 20)) {
+  print("The combined conditions are satisfied.")
+} else {
+  print("The combined conditions are not satisfied.")
+}
+```
+
+## Loops
+
+A loop in computer science is a sequence of instructions that is repeated over and over until a certain condition is reached.
+
+This "condition" could be a lot of things, but the user most often sets the condition. For instance, if we want to do a loop which adds 2 to every number in a vector, the loop would stop at the n-th number in the vector. If we want to do a loop that adds the number 5 until it grows bigger than $10\ !$ , we may not exactly know how many times the code would need to loop, but could stop it after it hits that condition.
+
+This is exactly where `for` and `while` loops come in. In a `for` loop, we know exactly how many times our loop should run. In the case of our vector, it should run $n$ times. When we don't know how many times our loop should run, we use a `while` loop. In the case of our $10\ !$ example, we just end the loop when our number is bigger than $10\ !$ .
+
+### For Loop
+
+```{r}
+
+# Example: Simple for loop adding 2 to each entry in a vector
+my_vector <- c(3, 6, 9, 12, 15)
+
+# Initialize a variable to count iterations
+iterations <- 0
+
+# Print the original vector
+print("Original Vector:")
+print(my_vector)
+
+# Get the length of the vector
+n <- length(my_vector)
+
+# Iterate over the vector, add 2 to each entry, and print each element
+for (i in 1:n) {
+  my_vector[i] <- my_vector[i] + 2
+  iterations <- iterations + 1
+}
+
+# Print the final vector and the number of iterations
+print("Final Vector:")
+print(my_vector)
+print(paste("Number of iterations:", iterations))
+```
+
+### While Loop
+
+```{r}
+# Example: Modified while loop adding 5 until it's greater than 10!
+result <- 0
+target_value <- factorial(10)  # Using 10 factorial
+
+# Initialize a variable to count iterations
+iterations <- 0
+
+# Keep adding 5 until the result is greater than 10 factorial
+while (target_value >= result) {
+  result <- result + 5
+  iterations <- iterations + 1
+}
+
+# Print the result, the target value, and the number of iterations
+print(paste("Result:", result))
+print(paste("Target Value (10 factorial):", target_value))
+print(paste("Number of iterations:", iterations))
+```
+
+# Basic SLR: Visualizing and Computing
+
+Now, we're going to do a basic Simple Linear Regressioon (SLR) model using the `iris` dataset in R, a popular dataset of various flower measurements used for beginners.
+
+We will also use the Tidyverse package, a popular collection of library for working with data in R. We will use ggplot2, a library in Tidyverse, to plot data.
+
+## Simple Linear Regression
+
+Recall a SLR model is represented as:
+
+$$y=β_0​+β_1​⋅x+ε$$
+
+where $y$ is the dependent variable, $x$ is the independent variable, $\beta_0$​ is the y-intercept, $\beta_1$​ ​is the slope, and $\epsilon$ represents the error term.
+
+In our example, we will be predicting the width of a petal ( $y$ ) from its length ( $x$ ). R will generate our beta values when it fits the line.
+
+You're going to notice the code gets a bit more complex, but don't stress out too much! Pay attention to the comments and read through the text we've provided!
+
+## Installing and Loading Tidyverse
+
+To be able to access the packages, you need to first install the tidyverse, and then load it. ggplot2 comes with the tidyverse, so when you load it you'll have ggplot2 with it.
+
+*It's best practice to only load the packages you need, but don't worry about that right now.*
+
+```{r}
+
+install.packages("tidyverse")
+library(tidyverse)
+
+# Don't interact with the code until the red square turns back into a green arrow.
+# In the output, you're going to see all the different packages in tidyverse that were installed!
+```
+
+## Load & Inspect the Dataset
+
+Now, let's load the "iris" dataset from R and briefly evaluate what it looks like.
+
+```{r}
+
+# Load the "Iris" dataset
+data(iris)
+
+# View the first few rows of the dataset
+head(iris)
+```
+
+We can also generate a basic scatter-plot. Keep this plot in mind for reference later!
+
+```{r}
+
+# Plot the data on a scatterplot with ggplot2
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
+  geom_point() +
+  labs(title = "Scatterplot of Petal Length vs. Petal Width",
+       x = "Petal Length", y = "Petal Width")
+```
+
+In the code above:
+
+-   ggplot() calls the ggplot2 library to begin a plot function.
+
+    -   The first entry is the data we want to plot. In this case we use `iris`.
+
+    -   The second entry is where we put in our $x$ and $y$ values. To do this, we need to use `aes()` which basically lets us specify our variables.
+
+        -   Set our independent variable to the petal length. In the dataset we have, the column for pedal length is called `Petal.Length`
+
+        -   Set our dependent variable to the petal width. In the dataset we have, the column for pedal width is called `Petal.Width`
+
+    -   We specify what type of plot we want in the next entry. Since we want a scatterplot, we use `geom_point()`
+
+    -   We then add some labels to our plot with `labs()`. We added a title and axis labels in this case.
+
+When using ggplot() in R, it often outlines in RStudio where you need to put which specifications. Reading the code documentation is typically fruitful.
+
+## Create a SLR with Built-In Tools
+
+Now, we're going to use R's built-in Linear Regression tool to create a fitted line. With this tool, we will have our $\beta_0$​ and $\beta_1$​ ​values generated for us by R. R does this through ordinary least squares (OLS). Essentially, R is automating the process for generating the slope by minimizing the sum of squared residuals which is an optimization algorithm.
+
+```{r}
+
+# Create a linear regression model
+model <- lm(Petal.Width ~ Petal.Length, data = iris)
+```
+
+In the code above:
+
+-   `lm()` is the built-in function within R that does linear regression.
+
+    -   `Petal.Width ~ Petal.Length` is used to denote "y vs. x" in our plot. Recall that when we say versus, the dependent variable comes first and the independent variable comes second.
+
+    -   We have to specify again what dataset we're using, so we just say `data = iris` to satisfy the conditions of the `lm()` function.
+
+Notice how we assign our `lm()` function to a variable, `model`, using `<-`. This is often done to "store the results" into a single variable.
+
+If we were to ask R to compute the model each time we needed it (i.e. use lm() multiple times), it would be very tedious and slow. Assigning it to a variable helps with neatness and general accessibility.
+
+## Plot the SLR Model
+
+Now, we're going to generate the same scatter-plot as above, but this time put our regression line "on top of" the data
+
+```{r}
+
+# Scatterplot with the SLR line
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
+  geom_point() +
+  geom_abline(intercept = coef(model)[1], slope = coef(model)[2], color = "#BA0C2F") +
+  labs(title = "Linear Regression: Petal Length vs. Petal Width",
+       x = "Petal Length", y = "Petal Width")
+```
+
+As we can see, we use `ggplot()` to plot the scatter-plot just like we did above, using `iris`, `aes()`, `geom_point`, and `labs()` in almost the exact same way. However, we added one change using `geom_abline()`.
+
+What's with the `coef(model)[]` code? We'll discuss below, but basically, when we ran our lm() argument, `model` ended up becoming a list consisting of vectors. You can see this by running the following code block:
+
+```{r}
+
+#Prints the data type of model
+typeof(model)
+```
+
+Of the many vectors in model, one of them is the `Coefficients` vector, denoted as `coef`. We'll see the full vector below. The first accessible entry, or `coef(model)[1]` , is the intercept $\beta_0$. The second accessible entry, `coef(model)[2]` , is the slope $\beta_1$.
+
+-   `geom_abline()`: This is a function which allows a use to add a line to the graph. We simply put our `model` line right on top with the following arguments:
+
+    -   `intercept = coef(model)[1]`: Sets the intercept of the line. We already have this data from our model's `Coefficients` vector.
+
+    -   `slope = coef(model)[2]`: Sets the slope of the line. We already have this data from our model's `Coefficients` vector.
+
+    -   `color = "#BA0C2F"`: sets the color for the line. We used the hexadecimal color for Ohio State... Go Bucks!
+
+## Evaluating our SLR Accuracy
+
+The last step in our introductory workshop is to evaluate how well our model did.
+
+```{r}
+summary(model)
+```
+
+Below the `Call` value which describes the function used to generate `model`, we have `Residuals`, `Coefficients` (as seen prior), and our standard error ($+\sqrt{MSE}$), $R^2$ , F-stat, and p-value.
+
+[**From the results, can you conclude Pedal Length is a fair predictor of Pedal Width?**]{.underline}
+
+Our next workshop will explore more complicated topics including conditional logic, matrices and other data types, Tidyverse packages, loops, and more in-depth analysis.
+
+# Credits
+
+The Undergraduate Economics Society at The Ohio State University
+
+February 7th, 2024

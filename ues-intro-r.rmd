@@ -39,7 +39,7 @@ As we can see, using the `<-` symbol assigns a value to a variable. We can also 
 my_string <- "UES is an awesome Economics club!" # This is a string
 my_bool <- TRUE # This is a Boolean (T/F)
 my_char <- 'c' # This is a character
-my_double <- 1.6667
+my_double <- 1.6667 # This is a double
 
 print(my_string)
 print(my_bool)
@@ -59,8 +59,8 @@ typeof(my_bool)
 
 # Changing some data types
 as.numeric(my_bool)
-as.roman(a)
 as.integer(my_double)
+as.roman(a) # This one's for fun... a Roman numeral!
 ```
 
 ## Vectors

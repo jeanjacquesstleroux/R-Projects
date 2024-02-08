@@ -110,7 +110,7 @@ print(string_vec)
 ```{r}
 
 # We can also print just one element of a vector
-x <- v[3] # v[3]: Third element of v
+x <- int_vec[3] # int_vec[3]: Third element of v
 print(paste("Third element of v:", x))
 ```
 

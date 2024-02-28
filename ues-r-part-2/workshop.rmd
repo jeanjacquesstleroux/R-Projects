@@ -1,0 +1,560 @@
+---
+title: "ues-r-ws-2"
+output: html_document
+date: "2024-02-28"
+---
+
+# R Part 2: Advanced Multiple Linear Regression
+
+This is an R Markdown journal that serves as a follow up to [Part 1 of the UES R Workshop](https://tinyurl.com/ues-r-intro). In that workshop, we covered data types, vectors, matrices, conditional logic, loops, and SLR, as well as general syntax.
+
+In this workshop, we're going to use some of those more complicated topics and work with Excel data. Last time, we used a pre-made data set; this time we're using our own.
+
+Specifically, we're going to do the following:
+
+1.  Download data from an Excel file
+
+2.  Investigate & clean up the data and prepare it for analysis
+
+3.  Conduct EDA
+
+4.  Create an MLR Model
+
+5.  Evaluate / tweak MLR Model
+
+## Import our libraries
+
+First, we need to "boot up" the packages in R we need. You'll observe later on we'll use the `library()` function to call on packages again. This isn't standard practice, but done for the purpose of this notebook.
+
+```{r Installations}
+
+# Install the tidyverse to read & work with data
+install.packages("tidyverse")
+library(tidyverse)
+
+# If the tidyverse doesn't offer readxl in your version:
+install.packages("readxl")
+library(readxl)
+
+# For later...
+install.packages("gridExtra")
+library(gridExtra)
+
+install.packages("reshape2")
+library(reshape2)
+
+install.packages("ggpubr")
+library(ggpubr)
+
+install.packages(moments)
+library(moments)
+```
+
+## Insert Excel data
+
+Now, you need to load in the Excel data that UES provided for this workshop, the Chicago Census Data. Some of this you'll have to do yourself. Namely, **you'll have to copy your file path into the journal**.
+
+We have to assign the filepath of the Excel sheet to a variable as a string, and use that variable when calling the `read_excel()` function from `readxl`. You could also just put the filepath in the function directly... we do it step-by-step for readability!
+
+If downloading the data GitHub, open the .csv file in Excel and save it as a .xlsx file.
+
+```{r}
+
+# Download the Chicago Census Data
+
+# TO-DO: Replace the below filepath with your own
+excel_file <- "/Users/stleroux/Downloads/chicago-census-data.xlsx"
+
+# Use the tidyverse (readxl) to import the data into R
+data <- read_excel(excel_file)
+```
+
+We'll preview the data here:
+
+```{r}
+
+# View the first few rows of the dataset
+head(data)
+```
+
+And view the structure of the data here:
+
+```{r}
+
+# View the structure and properties of the data
+str(data)
+```
+
+### Inspect if anything needs fixed/removed
+
+An extremely important thing to check for in a data set is the existence of `NA`, or "Null" values. Basically, we don't want data that is empty in our Excel sheet.
+
+The reason why we don't want to encounter null values in data analysis is because null values cause data processing inconsistencies, unexpected errors, and slow down data retrieval and processing since they take up space & memory.
+
+In the below code block, we check for all null values, and print out the rows that have them.
+
+```{r}
+# Check for NA values in the dataset
+na_values <- is.na(data)
+
+# Check if na_values returns any "True" values
+any_na <- any(na_values)
+
+if (any_na) {
+  # Print message indicating NA values exist in the dataset
+  cat("NA values exist in the dataset.\n")
+  
+  # Print columns with NA values and their counts
+  cat("Columns with NA values:\n")
+  print(colSums(na_values))
+  
+  # Print rows with NA values for said columns
+  cat("\nRows with NA values:\n")
+  rows_with_na <- data[rowSums(na_values) > 0, ]
+  print(rows_with_na)
+  
+} else {
+  # Print message indicating no NA values in the dataset
+  cat("No NA values found in the dataset.\n")
+}
+```
+
+That was a chunky block of code. What did it do?
+
+-   We create a variable, `na_values`, that compiles all the null values of the data into a [matrix]{.underline} of `TRUE`/`FALSE` ("Boolean") values.
+
+-   Then, we use `any_na` to see whether there are any `TRUE` values that exist. If there are NA values, `any_na` essentially becomes either `TRUE` or `FALSE`.
+
+-   If we have a true value (aka, `if (any_na)` ...)
+
+    -   We're first going to tell the user NA values exist.
+
+    -   Then, we're going to tell them which columns ("categories") have NA values.
+
+    -   Lastly, we print out which row(s) have the NA values.
+
+-   If we have a false value, then we're good to go and we skip over the entire checks!
+
+We can see that we indeed have a row with empty data, "Mount Greenwood". Let's go ahead and delete it:
+
+```{r}
+
+# Remove rows with NA values using drop_na() from tidyverse.
+data_cleaned <- drop_na(data)
+
+# Print the cleaned dataset
+print(data_cleaned)
+
+# View the structure and properties of updated data
+str(data_cleaned)
+```
+
+Notice how the size of the data set went from 77 rows x 9 columns to 76 rows x 9 columns.
+
+## Conduct EDA
+
+EDA is short for Exploratory Data Analysis. We did some EDA in our last workshop by viewing a scatter plot. Now, let's go more in depth.
+
+We want to evaluate the data to know if it's good enough to use for MLR. If we have a messy dataset, outliers, skewed distributions, etc. we need to either normalize this data with something like Huber regression, use methods like trimmed means or mathematics to adjust axes, or perhaps use a different model altogether.
+
+### Analyzing Distributions of Variables
+
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(moments)
+
+# These are the columns that have numerical values which we want to investigate.
+columns_of_interest <- c("PERCENT_OF_HOUSING_CROWDED", 
+                         "PERCENT_HOUSEHOLDS_BELOW_POVERTY",
+                         "PERCENT_AGED_16__UNEMPLOYED",
+                         "PERCENT_AGED_25__WITHOUT_HIGH_SCHOOL_DIPLOMA",
+                         "PERCENT_AGED_UNDER_18_OR_OVER_64",
+                         "PER_CAPITA_INCOME")
+
+# Custom labels for the columns
+column_labels <- c("Housing Crowded (%)",
+                   "Households Below Poverty (%)",
+                   "Aged 16+ Unemployed (%)",
+                   "Aged 25+ No High School Diploma (%)",
+                   "Aged Under 18 or Over 64 (%)",
+                   "Per Capita Income")
+
+# Create histograms for selected columns
+histograms <- lapply(seq_along(columns_of_interest), function(i) {
+  column <- columns_of_interest[i]
+  label <- column_labels[i]
+  
+  # Design histogram plots
+  histogram_plot <- ggplot(data_cleaned, aes(x = !!rlang::sym(column))) +
+    geom_histogram(bins = 10, fill = "skyblue", color = "black", aes(y = after_stat(density))) +
+    stat_function(fun = dnorm, args = list(mean = mean(data_cleaned[[column]]), sd = sd(data_cleaned[[column]])), color = "red") +
+    labs(title = paste("Distribution of \n", label), x = label, y = "Density") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 9, hjust = 0.5),
+          axis.title = element_text(size = 7),
+          axis.text = element_text(size = 7),
+          plot.margin = margin(10, 10, 10, 10))
+  
+  # Calculate kurtosis and skewness using moments package
+  kurt <- kurtosis(data_cleaned[[column]])
+  skew <- skewness(data_cleaned[[column]])
+  
+  # Create a message with kurtosis and skewness
+  message <- paste(label, "Kurtosis:", kurt, "Skewness:", skew)
+  
+  list(histogram_plot = histogram_plot, stats_message = message)
+})
+
+# Combine histograms into a single plot
+grid.arrange(grobs = lapply(histograms, function(x) x$histogram_plot), ncol = 2)
+
+# Print kurtosis and skewness
+invisible(lapply(histograms, function(x) print(x$stats_message)))
+```
+
+Here, we've plotted the graphs into one comprehensive chart. But, what exactly did we do? How does the code work?
+
+1.  Defining columns of interest:
+
+    -   `columns_of_interest <- c("PERCENT_OF_HOUSING_CROWDED", ...)`: This line creates a vector named `columns_of_interest` containing the names of columns from the dataset we want to investigate.
+
+2.  Custom labels for columns:
+
+    -   `column_labels <- c("Housing Crowded (%)", ...)`: Here, a vector named `column_labels` is created to provide custom labels for the columns of interest. These labels are more readable than the original column names.
+
+3.  Creating histograms:
+
+    -   `lapply(seq_along(columns_of_interest), function(i) { ... })`: This line [iterates]{.underline} over each element (column name) in the columns_of_interest vector.
+
+    -   `column <- columns_of_interest[i]`: We extract the current column name from the vector.
+
+    -   `label <- column_labels[i]`: It extracts the corresponding custom label for the column.
+
+    -   Inside the function:
+
+        -   `ggplot(...) + geom_histogram(...) + labs(...) + theme(...)`: This code generates a histogram plot using `ggplot2` for the [current column]{.underline}. It specifies aesthetics, such as x-axis `(x = !!rlang::sym(column))` and title `(title = paste("Distribution of \n", label))`.
+
+            -   `(x = !!rlang::sym(column))` is essentially saying: "Evaluate the expression `rlang::sym(column)` to get the variable name, and then insert that variable name into the ggplot aesthetics argument as the x-axis variable."
+
+        -   The resulting plot is stored in variable `gg`.
+
+4.  Combining histograms:
+
+    -   `grid.arrange(grobs = histograms, ncol = 2)`: Finally, this line arranges the generated histogram plots (`histograms`) into a single grid layout with two columns. It uses the `gridExtra` package to arrange multiple plots.
+
+We can do the exact same thing with box plots, just to see the similarities.
+
+\#
+
+```{r}
+
+# Load required library
+library(ggplot2)
+
+# Create boxplots for selected columns
+boxplots <- lapply(seq_along(columns_of_interest), function(i) {
+  column <- columns_of_interest[i]
+  label <- column_labels[i]
+  
+  # Create boxplot
+  ggplot(data_cleaned, aes(y = !!sym(column))) +
+    geom_boxplot(fill = "skyblue", color = "black") +
+    labs(title = paste("Boxplot of \n", label), x = "", y = "") +  # No axis labels
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10, hjust = 0.5),
+          axis.title = element_text(size = 8),
+          axis.text = element_text(size = 8),
+          plot.margin = margin(10, 10, 10, 10))
+  
+})
+
+# Combine boxplots into a single plot
+grid.arrange(grobs = boxplots, ncol = 3)
+
+```
+
+Note we mostly do the exact same thing... iterate over the [column vectors]{.underline}, create a boxplot for each one, and compile them all into one, big plot. Only this time, we customize the y-axis labels `y = !!sym(column)` to get the variable names. We leave the axis titles blank for simplicity.
+
+### Analyzing Correlation Between Variables
+
+Assessing correlations between independent variables in MLR models is valuable for several reasons. First, it helps detect multicollinearity, which can affect the stability of estimates and lead to misleading interpretations. Second, it aids in interpreting model results and guiding feature selection. It also assists in verifying assumptions of MLR and optimizing model performance by addressing redundancy and potential overfitting.
+
+A correlation matrix is a table that shows how strongly different variables are related to each other. It calculates correlation coefficients, which are numbers indicating the strength and direction of the relationship between variables. These coefficients range from -1 to 1:
+
+-   If a coefficient is close to 1, it means the variables have a strong positive relationship (when one goes up, the other tends to go up).
+
+-   If it's close to -1, it indicates a strong negative relationship (when one goes up, the other tends to go down).
+
+-   If it's close to 0, it suggests there's little to no relationship between the variables.
+
+```{r}
+
+library(reshape2)
+library(ggplot2)
+
+# creating correlation matrix
+corr_mat <- round(cor(data_cleaned[, columns_of_interest], method = "spearman"),2)
+ 
+# reduce the size of correlation matrix
+melted_corr_mat <- melt(corr_mat)
+head(melted_corr_mat)
+ 
+# Simplify variable names
+variable_labels <- c("Housing Crowded", 
+                     "Households Below Poverty",
+                     "Aged 16+ Unemployed",
+                     "Aged 25+ No High School Diploma",
+                     "Aged Under 18 or Over 64",
+                     "Per Capita Income")
+
+# Match variable names
+melted_corr_mat$Var1 <- variable_labels[match(melted_corr_mat$Var1, columns_of_interest)]
+melted_corr_mat$Var2 <- variable_labels[match(melted_corr_mat$Var2, columns_of_interest)]
+
+# Plotting the correlation heatmap
+ggplot(data = melted_corr_mat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  geom_text(aes(label = value), size = 4, color = "white") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Observe two things about the correlation matrix:
+
+1.  We use [**Spearman's rank correlation coefficient**](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient), which is a nonparametric measure of correlation. We need to do this because our data is very clearly skewed as shown in the histogram plots/data. The coefficient, ${\rho}$, is given by the equation$$\rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}$$
+
+    1.  Numerator**:** $6 * {\Sigma}d^2_i$
+
+        -   The formula computes the sum of squared differences between the ranks $d_i$​ of corresponding variables in the two datasets.
+
+        -   Squaring the differences ensures that they are positive and more weight goes to larger differences.
+
+        -   The $6$ is a normalization factor.
+
+    2.  Denominator**:** $n(n^2-1)$
+
+        -   $n$ represents the number of data points.
+
+        -   $n^2$ represents the total number of possible rank pairs if there were no ties.
+
+        -   The term $n(n^2-1)$ accounts for the maximum possible value of the sum of squared differences if there were no ties between ranks.
+
+    3.  Final Calculation**:**
+
+        -   Subtracting the sum of squared differences divided by the maximum possible value of the sum of squared differences normalizes the value to the range [-1, 1].
+
+        -   A perfect positive monotonic relationship would result in a Spearman's correlation coefficient of 1.
+
+        -   A perfect negative monotonic relationship would result in a Spearman's correlation coefficient of -1.
+
+        -   No monotonic relationship would result in a Spearman's correlation coefficient of 0.
+
+2.  The correlation matrix is a [diagonal]{.underline} [matrix]{.underline}. Essentially, the matrix, $R \in \mathbb{R}^{n \times n}$ follows the property:
+
+    $$
+    R = \begin{bmatrix}
+    1 & r_{12} & \cdots & r_{1n} \\
+    r_{21} & 1 & \cdots & r_{2n} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    r_{n1} & r_{n2} & \cdots & 1
+    \end{bmatrix}
+    $$
+
+    Where the matrix's upper and lower triangles are equivalent. If you wanted to, you could decompose the matrix to only show one of the two. Sometimes, this is done; other times we show the full thing for readability purposes. The code block underneath does that if you're curious.
+
+Next, let's plot a scatter plot for all of our columns of interest vs. our desired predictor column, Hardship Index.
+
+Ideally, we have our $R^2$ values such that $0.5 \le |R^2| \le 0.99$, which indicates at least a reasonably significant relationship exists.
+
+```{r}
+
+# Load required libraries
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+
+# Column nicknames
+column_nicknames <- c("Housing Crowded", 
+                      "Households Below Poverty",
+                      "Aged 16 Unemployed",
+                      "Aged 25 No HS Diploma",
+                      "Aged Under 18 Over 64",
+                      "Per Capita Income")
+
+# Plot scatter plots for each numerical feature against hardship index
+scatter_plots <- lapply(seq_along(numerical_features), function(i) {
+  feature <- numerical_features[i]
+  ggplot(data_cleaned, aes_string(x = feature, y = "HARDSHIP_INDEX")) +
+    geom_point(alpha = 0.5, color = "skyblue") +  # Add transparency to points
+    geom_smooth(method = "lm", se = TRUE, color = "red") +  # Add linear regression line with confidence intervals
+    stat_cor(method = "pearson", label.x = 0.9, label.y = 0.1, size = 3, hjust = 0, 
+             vjust = 0) + # Add correlation coefficient
+    labs(title = paste("Scatter plot of \n", column_nicknames[i], "vs Hardship Index"),
+         x = column_nicknames[i], y = "Hardship Index") +
+    theme_minimal() + 
+    theme(
+      plot.title = element_text(size = 10, hjust = 0.5),  
+      axis.title = element_text(size = 8),   
+      axis.text = element_text(size = 6)
+    )
+})
+
+# Combine scatter plots into a grid
+grid.arrange(grobs = scatter_plots, ncol = 2)
+```
+
+Indeed, our variables are related enough to hardship index that it would be reasonable to conduct an MLR on the values.
+
+## Building Out the MLR
+
+### SLR Recap
+
+Recall a simple linear regression (SLR) model is represented as:
+
+$$y=β_0​+β_1​⋅x+ε$$
+
+where $y$ is the dependent variable, $x$ is the independent variable, $\beta_0$​ is the y-intercept, $\beta_1$​ ​is the slope, and $\epsilon$ represents the error term.
+
+### MLR Definition
+
+Multiple linear regression (MLR) uses two or more independent variables to predict the outcome of a dependent variable whereas SLR only uses 1. Hence, a MLR model is represented as:
+
+$$
+Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \ldots + \beta_p X_p + \varepsilon
+$$
+
+where $Y$ is the dependent variable, $X_i$ is the $i$-th independent variable, $\beta_0$ is the y-intercept, and $\beta_i$ is the slope for the $i$-th independent variable.
+
+### Create MLR
+
+Now, let's use the same model as we did last time with SLR, only this time, use y \~ x with multiple x values.
+
+```{r}
+
+library(car)  # For linear hypothesis testing
+
+# Feature selection, model building
+mlr_model <- lm(HARDSHIP_INDEX ~ PERCENT_OF_HOUSING_CROWDED +
+                                 PERCENT_HOUSEHOLDS_BELOW_POVERTY +
+                                 PERCENT_AGED_16__UNEMPLOYED +
+                                 PERCENT_AGED_25__WITHOUT_HIGH_SCHOOL_DIPLOMA +
+                                 PERCENT_AGED_UNDER_18_OR_OVER_64 +
+                                 PER_CAPITA_INCOME,
+                 data = data_cleaned)
+
+# Display summary of the MLR model
+print("Summary:")
+summary(mlr_model)
+
+# Check for multicollinearity using Variance Inflation Factor (VIF)
+print("VIF:")
+vif(mlr_model) 
+
+# Plot the MLR Model
+plot(mlr_model) 
+```
+
+We can see above there is a data point, namely point #54, which is influencing our model as it falls outside Cook's distance. Let's see what's going on with that...
+
+```{r}
+
+print(data_cleaned[54, ])
+```
+
+### View the MLR Equation
+
+There are a few ways we can print out the MLR equation. One way is by using a loop to go through all the coefficients and print them out with corresponding X values:
+
+```{r}
+# Extract coefficients from the linear model
+coefficients <- coef(mlr_model)
+
+# Extract intercept (first coefficient by default)
+intercept <- coefficients[1]
+
+# Take out (remove) the intercept from coefficients
+coefficients <- coefficients[-1]
+
+# Initialize an empty string to store the equation
+equation <- paste("Y =", round(intercept, 3))
+
+# Loop through coefficients to construct the equation
+for (i in seq_along(coefficients)) {
+  equation <- paste(equation, " + ", round(coefficients[i], 3), "*X", i, sep = "")
+}
+
+# Print equation
+print(equation)
+```
+
+How does the for loop work?
+
+-   `for (i in seq_along(coefficients)) { ... }`: This is a for loop that iterates over each element of the `coefficients` vector. `seq_along(coefficients)` gives us a limit for how many times the loop can run. Namely, it represents the length of coefficients.
+
+-   Inside the loop, the code constructs a string for the regression equation:
+
+    -   `equation <- paste(equation, " + ", round(coefficients[i], 3), "*X", i, sep = "")`: This line appends to the `equation` string the term for the current predictor variable. It combines the existing equation string with the coefficient value, the string `"*X"`, and the index `i` indicating the position of the predictor variable in the regression model.
+
+### Exercise 1: Can You Improve the MLR?
+
+What could you do to the data to improve the MLR? Try exploring some topics via internet, generative AI, or your own knowledge of the R documentation to see how you can redefine this workshop's problem.
+
+Some potential exercises:
+
+-   Could you transform this into a polynomial regression problem? Why or why not?
+
+-   Would eliminating any parameters help or hurt your model's accuracy? Why? Tinker with the model to see.
+
+-   Do you suspect overfitting in our model? Why or why not? **Bonus: Prove with R that there is or isn't overfitting.**
+
+```{r}
+
+mlr_model_2 <- lm(y_value ~ PERCENT_OF_HOUSING_CROWDED +
+                                 PERCENT_HOUSEHOLDS_BELOW_POVERTY +
+                                 PERCENT_AGED_16__UNEMPLOYED +
+                                 PERCENT_AGED_25__WITHOUT_HIGH_SCHOOL_DIPLOMA +
+                                 PERCENT_AGED_UNDER_18_OR_OVER_64 +
+                                 PER_CAPITA_INCOME,
+                 data = data_cleaned)
+
+# Model evaluation
+
+# Display summary of the MLR model
+summary(mlr_model_2)
+
+# Check for multicollinearity using Variance Inflation Factor (VIF)
+vif(mlr_model_2)
+
+# Check assumptions of the MLR model (e.g., residuals vs. fitted values)
+plot(mlr_model_2) 
+```
+
+### Exercise 2: Making Some Predictions
+
+Want to know the hardship index for a made-up city in Chicago given some different parameters? Try plugging in your numbers below!
+
+```{r}
+
+new_data <- data.frame(
+  PERCENT_OF_HOUSING_CROWDED = 5.7,
+  PERCENT_HOUSEHOLDS_BELOW_POVERTY = 7.6,
+  PERCENT_AGED_16__UNEMPLOYED = 8.7,
+  PERCENT_AGED_25__WITHOUT_HIGH_SCHOOL_DIPLOMA = 10.2,
+  PERCENT_AGED_UNDER_18_OR_OVER_64 = 8.5,
+  PER_CAPITA_INCOME = 40398
+)
+
+# Make predictions using the trained model
+predictions <- predict(mlr_model, newdata = new_data)
+
+# Print the predictions
+print(predictions)
+```
+
+# Credits
+
+The Undergraduate Economics Society at The Ohio State University
+
+February 28th, 2024

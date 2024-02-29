@@ -46,7 +46,7 @@ library(reshape2)
 install.packages("ggpubr")
 library(ggpubr)
 
-install.packages(moments)
+install.packages("moments")
 library(moments)
 ```
 
@@ -250,8 +250,9 @@ We can do the exact same thing with box plots, just to see the similarities.
 
 ```{r}
 
-# Load required library
+# Load required libraries
 library(ggplot2)
+library(gridExtra)
 
 # Create boxplots for selected columns
 boxplots <- lapply(seq_along(columns_of_interest), function(i) {
@@ -362,7 +363,7 @@ Observe two things about the correlation matrix:
     \end{bmatrix}
     $$
 
-    Where the matrix's upper and lower triangles are equivalent. If you wanted to, you could decompose the matrix to only show one of the two. Sometimes, this is done; other times we show the full thing for readability purposes. The code block underneath does that if you're curious.
+    Such that $-1 \le r_{jk} \le 1 \in R$ . Observe the matrix's upper and lower triangles are equivalent. If you wanted to, you could decompose the matrix to only show one of the two. Sometimes, this is done; other times we show the full thing for readability purposes. The code block underneath does that if you're curious.
 
 Next, let's plot a scatter plot for all of our columns of interest vs. our desired predictor column, Hardship Index.
 
@@ -384,9 +385,11 @@ column_nicknames <- c("Housing Crowded",
                       "Per Capita Income")
 
 # Plot scatter plots for each numerical feature against hardship index
-scatter_plots <- lapply(seq_along(numerical_features), function(i) {
-  feature <- numerical_features[i]
-  ggplot(data_cleaned, aes_string(x = feature, y = "HARDSHIP_INDEX")) +
+# Note: we use the "columns of interest" data from earlier!
+
+scatter_plots <- lapply(seq_along(columns_of_interest), function(i) {
+  feature <- columns_of_interest[i]
+  ggplot(data_cleaned, aes(x = !!rlang::sym(feature), y = !!rlang::sym("HARDSHIP_INDEX"))) +
     geom_point(alpha = 0.5, color = "skyblue") +  # Add transparency to points
     geom_smooth(method = "lm", se = TRUE, color = "red") +  # Add linear regression line with confidence intervals
     stat_cor(method = "pearson", label.x = 0.9, label.y = 0.1, size = 3, hjust = 0, 
@@ -511,7 +514,9 @@ Some potential exercises:
 
 ```{r}
 
-mlr_model_2 <- lm(y_value ~ PERCENT_OF_HOUSING_CROWDED +
+# TO-DO: Change the model as you see fit... experiment!
+
+mlr_model_2 <- lm(HARDSHIP_INDEX ~ PERCENT_OF_HOUSING_CROWDED +
                                  PERCENT_HOUSEHOLDS_BELOW_POVERTY +
                                  PERCENT_AGED_16__UNEMPLOYED +
                                  PERCENT_AGED_25__WITHOUT_HIGH_SCHOOL_DIPLOMA +
@@ -519,7 +524,7 @@ mlr_model_2 <- lm(y_value ~ PERCENT_OF_HOUSING_CROWDED +
                                  PER_CAPITA_INCOME,
                  data = data_cleaned)
 
-# Model evaluation
+## Model evaluation
 
 # Display summary of the MLR model
 summary(mlr_model_2)

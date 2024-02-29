@@ -363,7 +363,7 @@ Observe two things about the correlation matrix:
     \end{bmatrix}
     $$
 
-    Such that $-1 \le r_{jk} \le 1 \in R$ . Observe the matrix's upper and lower triangles are equivalent. If you wanted to, you could decompose the matrix to only show one of the two. Sometimes, this is done; other times we show the full thing for readability purposes. The code block underneath does that if you're curious.
+    Such that $-1 \le r_{jk} \le 1 \in R$ . Observe the matrix's upper and lower triangles are equivalent. If you wanted to, you could decompose the matrix to only show one of the two. Sometimes, this is done; other times we show the full thing for readability purposes. 
 
 Next, let's plot a scatter plot for all of our columns of interest vs. our desired predictor column, Hardship Index.
 
